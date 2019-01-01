@@ -24,7 +24,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// Config for http Source
+// Config for http Server
 type Config struct {
 	Addr              string
 	WriteTimeout      time.Duration
@@ -32,7 +32,7 @@ type Config struct {
 	ReadHeaderTimeout time.Duration
 }
 
-// Server is a api server for a stream
+// Server is a http server
 type Server struct {
 	config Config
 	http   *http.Server
@@ -64,19 +64,20 @@ func New(config Config) (server *Server) {
 }
 
 // Start serving
-func (s *Server) Start() {
-	go func() {
-		s.http.ListenAndServe()
-		err := s.http.ListenAndServe()
-		if err != http.ErrServerClosed {
-			panic(err)
-		}
-	}()
+func (s *Server) Start() (err error) {
+	if err = s.http.ListenAndServe(); err != http.ErrServerClosed {
+		return err
+	}
+	return nil
 }
 
 // Close serving
 func (s *Server) Close(ctx context.Context) (err error) {
 	return s.http.Shutdown(ctx)
+}
+
+func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	s.router.ServeHTTP(w, req)
 }
 
 // AddHandler adds a handler for the given method and path
@@ -86,7 +87,7 @@ func (s *Server) AddHandler(method, path string, handler Handle) {
 
 // BasicAuth middleware
 func BasicAuth(h Handle, requiredUser, requiredPassword string) Handle {
-	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	return func(w http.ResponseWriter, r *http.Request, ps Params) {
 		user, password, hasAuth := r.BasicAuth()
 		if hasAuth && user == requiredUser && password == requiredPassword {
 			h(w, r, ps)
