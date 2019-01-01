@@ -45,23 +45,30 @@ type Source struct {
 	donech     chan struct{}
 }
 
-type supplier struct {
-	sp *Source
+// Supplier fot http source processor
+type Supplier struct {
+	config Config
 }
 
-func (s supplier) New() streams.Processor {
-	return s.sp
+// New creates a new http source processor instance
+func (s Supplier) New() streams.Processor {
+	sp := &Source{}
+	sp.server = httpserver.New(s.config.Config)
+	sp.ackwoledge = s.config.Ackwoledge
+	sp.donech = make(chan struct{})
+
+	sp.topics = make(map[string]struct{}, len(s.config.Topics))
+	for _, topic := range s.config.Topics {
+		sp.topics[topic] = struct{}{}
+	}
+
+	return sp
 }
 
 // New creates a processor supplier for this source
 func New(config Config) (ps streams.ProcessorSupplier, err error) {
-	sp := &Source{}
-	sp.config = config
-	sp.server = httpserver.New(config.Config)
-	sp.ackwoledge = config.Ackwoledge
-	sp.donech = make(chan struct{})
 
-	if sp.config.Addr == "" {
+	if config.Addr == "" {
 		return nil, errors.New("empty address")
 	}
 
@@ -69,12 +76,7 @@ func New(config Config) (ps streams.ProcessorSupplier, err error) {
 		return nil, errors.New("empty topics")
 	}
 
-	sp.topics = make(map[string]struct{}, len(config.Topics))
-	for _, topic := range config.Topics {
-		sp.topics[topic] = struct{}{}
-	}
-
-	return supplier{sp}, nil
+	return Supplier{config}, nil
 
 }
 
@@ -91,7 +93,7 @@ func (sp *Source) Close() (err error) {
 	return nil
 }
 
-// Process starts this source
+// Process starts this source processing
 func (sp *Source) Process(ctx *streams.Context, record streams.Record) (err error) {
 
 	handler := func(w http.ResponseWriter, r *http.Request, ps httpserver.Params) {
