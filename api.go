@@ -16,60 +16,63 @@ package streams
    limitations under the License.
 */
 
-// ProcessorType specifies the type of the stream processor
-type ProcessorType string
-
-const (
-	// TypeSink processor type
-	TypeSink ProcessorType = "sink"
-	// TypeSource processor type
-	TypeSource ProcessorType = "source"
-	// TypeProcessor processor type
-	TypeProcessor ProcessorType = "processor"
-)
-
-// Starter interface. Any Processor or Store that must be initialized before
+// Initializer interface. Any Processor or Store that must be initialized before
 // running tasks in the the stream must implement this interface.
-type Starter interface {
-	Start() error
+type Initializer interface {
+	Init(ctx Context) (err error)
 }
 
 // Closer interface. Any Processor or Store that must be closed on Stream
 // termination must implement this interface.
 type Closer interface {
-	Close() error
+	Close() (err error)
 }
 
-// Processor of records in a Stream. Must be safe to concurrent use.
-// Source, Stream and Sink Processors must implement this interface.
-// For Sources the Process() method will be called once when the stream starts
-// and must only return when the source is closed or on error.
-// A Processor implementation must have a clear distinction of what consists
-// an error and should be reflected in the Stream, from a record processing failure,
-// i.e something that should be logged but don't has a significant impact in the
-// Stream availability and correctness.
+// Context is a execution context within a stream. Provides stream,
+// task and processor information, routing of records to children processors,
+// access to configured stores and contextual logging.
+type Context interface {
+	// NodeName returns the current node name.
+	NodeName() (name string)
+	// StreamName returns the stream name.
+	StreamName() (name string)
+	// Config returns the stream app configuration.
+	Config() (config Config)
+	// IsActive returns if this context is active and can forward records to the stream.
+	IsActive() (active bool)
+	// Store returns the store with the given name
+	Store(name string) (store Store, err error)
+	// Forward the record to the downstream processors. Can be called multiple times
+	// within Processor.Process() in order to send correlated or windowed records.
+	Forward(record Record) (err error)
+	// ForwardTo is like forward, but it forwards the record only to the given node
+	ForwardTo(to string, record Record) (err error)
+	// Error emits a error event to be handled by the Stream.
+	Error(err error, records ...Record)
+}
+
+// Processor of records in a Stream. Both processors and sinks must implement
+// this interface.
 type Processor interface {
-	Process(ctx *Context, record Record) (err error)
+	Process(ctx Context, record Record)
 }
 
-// ProcessorFunc provides a function type to create a Processor.
-type ProcessorFunc func(ctx *Context, record Record) (err error)
-
-// Process implements Processor for ProcessorFunc.
-func (p ProcessorFunc) Process(ctx *Context, record Record) (err error) {
-	return p(ctx, record)
+// Source is a source of records in a Stream.
+type Source interface {
+	Processor
+	Consume(ctx Context)
 }
 
-// ProcessorSupplier interface. Instantiates configured Processors used to create
-// for a Stream topology, recreate of individual processors on error or clone a Stream.
-type ProcessorSupplier interface {
-	New() Processor
-}
+// ProcessorSupplier instantiates Processors used to create a Stream topology,
+// recreate them or clone a Stream.
+// If further configuration is needed, the processor must implement the Initializer
+// interface in order to initialize itself before the Stream start and
+// access configuration parameters through the provided context.
+type ProcessorSupplier func() Processor
 
-// ProcessorSupplierFunc provides a func type for ProcessorSupplier
-type ProcessorSupplierFunc func() ProcessorFunc
-
-// New implements ProcessorSupplier for ProcessorSupplierFunc
-func (fn ProcessorSupplierFunc) New() Processor {
-	return fn()
-}
+// SourceSupplier instantiates Sources used to create a Stream topology,
+// recreate them or clone a Stream.
+// If further configuration is needed, the source must implement the Initializer
+// interface in order to initialize itself before the Stream start and
+// access configuration parameters through the provided context.
+type SourceSupplier func() Store

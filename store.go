@@ -17,43 +17,58 @@ package streams
 */
 
 import (
-	"time"
+	"errors"
 )
+
+var (
+	// ErrKeyNotFound key not found
+	ErrKeyNotFound = errors.New("key not found")
+)
+
+// StoreSupplier instantiates Stores used to create a Stream topology,
+// recreate them or clone a Stream.
+// If further configuration is needed, the store must implement the Initializer
+// interface in order to initialize itself before the Stream start and
+// access configuration parameters through the provided context.
+type StoreSupplier func() Store
 
 // ROStore is a read only key/value store
 type ROStore interface {
+
 	// Name returns this store name.
 	Name() (name string)
 
-	// Get value for the given key. The value must be copied if utilization outside
-	// of callback is needed
-	Get(key []byte, callback func(value []byte, err error) error) (err error)
+	// Get value for the given key.
+	Get(key []byte) (value []byte, err error)
 
-	// Iter iterates the store within the given key range applying the callback
-	// for the key value pairs. Returning a error causes the iteration to stop.
+	// Range iterates the store in byte-wise lexicographical sorting order
+	// within the given key range applying the callback for the key value pairs.
+	// Returning a error causes the iteration to stop.
 	// A nil from or to sets the iterator to the begining or end of Store.
-	// Both from and to as nil iterates the whole store
-	Iter(from, to []byte, callback func(key, value []byte) error) (err error)
+	// Setting both from and to as nil iterates the whole store.
+	// The key and value must be treated as immutable and read-only.
+	// Key and value bytes remain available only during the callback call and
+	// must be copied if outside use is needed,
+	Range(from, to []byte, callback func(key, value []byte) error) (err error)
 
-	// Count returns the number if entries in the store.
-	Count() (count int64, err error)
+	// RangePrefix iterates the store over a key prefix applying the callback
+	// for the key value pairs. Returning a error causes the iteration to stop.
+	// The key and value must be treated as immutable and read-only.
+	// Key and value bytes remain available only during the callback call and
+	// must be copied if outside use is needed,
+	RangePrefix(prefix []byte, cb func(key, value []byte) error) (err error)
 }
 
 // Store is a read write key/value store.
 type Store interface {
+	Processor
 	ROStore
 
 	// Set the value for the given key.
 	// If TTL is greater than 0 it will set an expiry time for the key.
-	Set(key, value []byte, ttl time.Duration) error
-
-	// Set the given key/value sequences in a single batch.
-	// If TTL is greater than 0 it will set an expiry time for the keys.
-	SetAll(keys, values [][]byte, ttl time.Duration) error
+	Set(key, value []byte) (err error)
+	// Set(key, value []byte, ttl time.Duration) (err error)
 
 	// Delete the given key and associated value
-	Delete(key []byte) error
-
-	// Delete the given keys in a single batch
-	DeleteAll(keys [][]byte) error
+	Delete(key []byte) (err error)
 }
