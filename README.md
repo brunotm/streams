@@ -2,8 +2,12 @@
 
 It is inspired by kafka streams, but intends to be source and sink agnostic.
 
-A Stream is a DAG of Sources, Processors and Sinks.
+A Stream is a DAG of Sources, Processors, Sinks and Stores.
 
 ## Under heavy development.
 
-Written by Bruno Moura brunotm@gmail.com, Licensed under the Apache License, Version 2.0.
+## Contact
+Bruno Moura [brunotm@gmail.com](mailto:brunotm@gmail.com)
+
+## License
+Streams source code is available under the Apache Version 2.0 [License](/LICENSE)
