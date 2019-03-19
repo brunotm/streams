@@ -19,31 +19,35 @@ package streams
 import (
 	"time"
 
-	"github.com/cespare/xxhash"
+	"github.com/dgryski/go-wyhash"
 )
 
 // Record represents a single record within a stream
 type Record struct {
-	ID    uint64       // ID is a internal ID calculated over the record Value
+	id    uint64       // ID is a internal ID calculated over the record Value
 	Topic string       // Topic to wich this Record is associated
-	Key   []byte       // Record Key
-	Value []byte       // Record Value
+	Key   Encoder      // Record Key
+	Value Encoder      // Record Value
 	Time  time.Time    // Record time
-	Data  interface{}  // Data is useful to forwarding non-serialized data between Processors
 	Ack   func() error // Ack Record source of its processing. Initially no-op.
 }
 
 // NewRecord creates a new record with the given paramenters and creates
 // a Record.ID if the record has nay content
-func NewRecord(topic string, key, value []byte, ts time.Time) (record Record) {
+func NewRecord(topic string, key, value Encoder, ts time.Time, ack func() error) (record Record) {
 	record.Topic = topic
 	record.Key = key
 	record.Value = value
 	record.Time = ts
-	record.Ack = defaultAck
+	record.Ack = ack
 
-	if len(record.Value) > 0 {
-		record.ID = xxhash.Sum64(record.Value)
+	switch {
+	case key != nil:
+		b, _ := record.Key.Encode()
+		record.id = wyhash.Hash(b, 0)
+	case value != nil:
+		b, _ := record.Value.Encode()
+		record.id = wyhash.Hash(b, 0)
 	}
 
 	return record
@@ -52,24 +56,4 @@ func NewRecord(topic string, key, value []byte, ts time.Time) (record Record) {
 // IsValid returns if this record contains any data
 func (r Record) IsValid() (valid bool) {
 	return (r.Key != nil || r.Value != nil) && r.Topic != ""
-}
-
-// Copy data into a new record preserving current acknowledgement
-func (r Record) Copy() (record Record) {
-	record.ID = r.ID
-	record.Time = r.Time
-	record.Ack = r.Ack
-
-	record.Key = make([]byte, len(r.Key))
-	copy(record.Key, r.Key)
-
-	record.Value = make([]byte, len(r.Value))
-	copy(record.Value, r.Value)
-
-	return record
-
-}
-
-func defaultAck() (err error) {
-	return err
 }
