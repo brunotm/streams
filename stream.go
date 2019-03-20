@@ -159,7 +159,7 @@ func (s *Stream) Close() (err error) {
 func (s *Stream) Store(name string) (store ROStore, err error) {
 	st, exists := s.topology.stores[name]
 	if !exists {
-		return nil, errStoreNotFound
+		return nil, ErrStoreNotFound
 	}
 
 	return st.processor.(ROStore), nil

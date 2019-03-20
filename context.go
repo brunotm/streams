@@ -45,7 +45,7 @@ func (c *context) IsActive() (active bool) {
 func (c *context) Store(name string) (store Store, err error) {
 	node, exists := c.stream.topology.stores[name]
 	if !exists {
-		return nil, errStoreNotFound
+		return nil, ErrStoreNotFound
 	}
 
 	return node.processor.(Store), nil
@@ -63,7 +63,7 @@ func (c *context) Error(err error, records ...Record) {
 func (c *context) Forward(record Record) (err error) {
 
 	if !c.IsActive() || (len(c.node.successors) == 0 || c.node.typ == types.Sink) {
-		return errInvalidForward
+		return ErrInvalidForward
 	}
 
 	c.stream.tasks.forwardFrom(c.node, record)
@@ -74,7 +74,7 @@ func (c *context) Forward(record Record) (err error) {
 func (c *context) ForwardTo(to string, record Record) (err error) {
 
 	if !c.IsActive() || (len(c.node.successors) == 0 || c.node.typ == types.Sink) {
-		return errInvalidForward
+		return ErrInvalidForward
 	}
 
 	return c.stream.tasks.forwardTo(to, record)

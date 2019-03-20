@@ -25,11 +25,19 @@ import (
 )
 
 var (
+	// ErrInvalidForward is returned when forwarding from a non active context
+	// i.e. outisde a processor.Process() call, forwarding from a processor with
+	// no sucessors or from a sink processor. A source processor context is
+	// always active.
+	ErrInvalidForward = errors.New("invalid forward")
+
+	// ErrStoreNotFound is returned when the Store requested store
+	// doesn't exists in the Stream topology.
+	ErrStoreNotFound = errors.New("store not found")
+
 	errPredecessorNotFound = errors.New("predecessor not found")
-	errStoreNotFound       = errors.New("store not found")
 	errInvalidTopology     = errors.New("invalid topology")
 	errEmptyName           = errors.New("name cannot be empty")
-	errInvalidForward      = errors.New("forward from a processor with no successors")
 	errNodeNotFound        = errors.New("node not found")
 	errInvalidNodeType     = errors.New("invalid node type")
 )

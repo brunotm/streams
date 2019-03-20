@@ -21,7 +21,7 @@ import (
 )
 
 var (
-	// ErrKeyNotFound key not found
+	// ErrKeyNotFound is returned when a key is not found on a get from the store.
 	ErrKeyNotFound = errors.New("key not found")
 )
 
