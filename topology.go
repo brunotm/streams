@@ -68,6 +68,15 @@ func (t *topology) addProcessor(name string, ps ProcessorSupplier, predecessors 
 	return t.addNode(name, types.Processor, ps, predecessors...)
 }
 
+// AddProcessorFunc adds a stream processor function to the topology
+func (t *topology) addProcessorFunc(name string, pf ProcessorFunc, predecessors ...string) (err error) {
+	ps := func() Processor {
+		return pf
+	}
+
+	return t.addNode(name, types.Processor, ps, predecessors...)
+}
+
 // AddSink adds a sink processor to the topology
 func (t *topology) addSink(name string, ps ProcessorSupplier, predecessors ...string) (err error) {
 	return t.addNode(name, types.Sink, ps, predecessors...)
@@ -76,6 +85,15 @@ func (t *topology) addSink(name string, ps ProcessorSupplier, predecessors ...st
 // AddStore adds a state store to the topology
 func (t *topology) addStore(name string, ps StoreSupplier) (err error) {
 	return t.addNode(name, types.Store, ps)
+}
+
+// AddSinkFunc adds a sink processor function to the topology
+func (t *topology) addSinkFunc(name string, pf ProcessorFunc, predecessors ...string) (err error) {
+	ps := func() Processor {
+		return pf
+	}
+
+	return t.addNode(name, types.Sink, ps, predecessors...)
 }
 
 // Clone this topology. Existing stores are shared with the clone, sources, processors and sinks

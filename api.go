@@ -70,6 +70,14 @@ type Source interface {
 // access configuration parameters through the provided context.
 type ProcessorSupplier func() Processor
 
+// ProcessorFunc implements a Processor for a function type
+type ProcessorFunc func(ctx Context, record Record)
+
+// Process the given record
+func (f ProcessorFunc) Process(ctx Context, record Record) {
+	f(ctx, record)
+}
+
 // SourceSupplier instantiates Sources used to create a Stream topology,
 // recreate them or clone a Stream.
 // If further configuration is needed, the source must implement the Initializer
