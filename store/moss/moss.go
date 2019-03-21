@@ -38,7 +38,7 @@ var _ streams.Remover = (*DB)(nil)
 var _ streams.Store = (*DB)(nil)
 var _ streams.StoreSupplier = Supplier
 
-// DB is a in-memory key value MOSS store
+// DB is a in-memory key value MOSS state store
 type DB struct {
 	ctx streams.Context
 	db  moss.Collection
@@ -116,6 +116,41 @@ func (d *DB) Get(key []byte) (value []byte, err error) {
 	return value, err
 }
 
+// Set value for the given key.
+func (d *DB) Set(key, value []byte) (err error) {
+
+	batch, err := d.db.NewBatch(1, len(key)+len(value))
+	if err != nil {
+		return err
+	}
+	defer batch.Close()
+
+	err = batch.Set(key, value)
+	if err != nil {
+		return err
+	}
+
+	return d.db.ExecuteBatch(batch, wopts)
+}
+
+// Delete value for the given key.
+func (d *DB) Delete(key []byte) (err error) {
+
+	batch, err := d.db.NewBatch(1, 0)
+	if err != nil {
+		return err
+	}
+	defer batch.Close()
+
+	// Moss returns a nil error on a non-existent key
+	err = batch.Del(key)
+	if err != nil {
+		return err
+	}
+
+	return d.db.ExecuteBatch(batch, wopts)
+}
+
 // Range iterates the store within the given key range applying the callback
 // for the key value pairs. Returning a error causes the iteration to stop.
 // A nil from or to sets the iterator to the begining or end of Store.
@@ -162,39 +197,4 @@ func (d *DB) RangePrefix(prefix []byte, cb func(key, value []byte) error) (err e
 	})
 
 	return err
-}
-
-// Set value for the given key.
-func (d *DB) Set(key, value []byte) (err error) {
-
-	batch, err := d.db.NewBatch(1, len(key)+len(value))
-	if err != nil {
-		return err
-	}
-	defer batch.Close()
-
-	err = batch.Set(key, value)
-	if err != nil {
-		return err
-	}
-
-	return d.db.ExecuteBatch(batch, wopts)
-}
-
-// Delete value for the given key.
-func (d *DB) Delete(key []byte) (err error) {
-
-	batch, err := d.db.NewBatch(1, 0)
-	if err != nil {
-		return err
-	}
-	defer batch.Close()
-
-	// Moss returns a nil error on a non-existent key
-	err = batch.Del(key)
-	if err != nil {
-		return err
-	}
-
-	return d.db.ExecuteBatch(batch, wopts)
 }

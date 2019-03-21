@@ -40,7 +40,7 @@ var _ streams.Remover = (*DB)(nil)
 var _ streams.Store = (*DB)(nil)
 var _ streams.StoreSupplier = Supplier
 
-// DB is a in-memory key value MOSS store
+// DB is a durable leveldb key value state store
 type DB struct {
 	ctx  streams.Context
 	db   *ldb.DB
@@ -128,6 +128,16 @@ func (d *DB) Get(key []byte) (value []byte, err error) {
 	return value, err
 }
 
+// Set value for the given key.
+func (d *DB) Set(key, value []byte) (err error) {
+	return d.db.Put(key, value, wopt)
+}
+
+// Delete value for the given key.
+func (d *DB) Delete(key []byte) (err error) {
+	return d.db.Delete(key, wopt)
+}
+
 // Range iterates the store within the given key range applying the callback
 // for the key value pairs. Returning a error causes the iteration to stop.
 // A nil from or to sets the iterator to the begining or end of Store.
@@ -159,14 +169,4 @@ func (d *DB) RangePrefix(prefix []byte, cb func(key, value []byte) error) (err e
 	}
 
 	return iter.Error()
-}
-
-// Set value for the given key.
-func (d *DB) Set(key, value []byte) (err error) {
-	return d.db.Put(key, value, wopt)
-}
-
-// Delete value for the given key.
-func (d *DB) Delete(key []byte) (err error) {
-	return d.db.Delete(key, wopt)
 }
