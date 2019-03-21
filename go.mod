@@ -11,5 +11,6 @@ require (
 	github.com/spf13/cast v1.3.0
 	github.com/stretchr/objx v0.1.1 // indirect
 	github.com/stretchr/testify v1.3.0
+	github.com/syndtr/goleveldb v1.0.0
 	golang.org/x/sys v0.0.0-20190318195719-6c81ef8f67ca // indirect
 )
