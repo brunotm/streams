@@ -1,4 +1,4 @@
-# Streams is a efficient stream processing framework in Go
+# Streams is an efficient stream processing library written in Go
 
 It is inspired by kafka streams, but intends to be source and sink agnostic.
 
