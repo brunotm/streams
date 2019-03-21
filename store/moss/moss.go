@@ -19,7 +19,6 @@ package moss
 import (
 	"bytes"
 	"errors"
-	"log"
 
 	"github.com/brunotm/streams"
 	"github.com/couchbase/moss"
@@ -44,7 +43,7 @@ type DB struct {
 	db  moss.Collection
 }
 
-// Supplier for memory store
+// Supplier for moss store
 func Supplier() (store streams.Store) {
 	return &DB{}
 }
@@ -52,21 +51,14 @@ func Supplier() (store streams.Store) {
 // Init store
 func (d *DB) Init(ctx streams.Context) (err error) {
 	d.ctx = ctx
-
-	streamDebug := ctx.Config().Get("debug").Bool(false)
-	nodeDebug := ctx.Config().Get(ctx.NodeName(), "debug").Bool(false)
-
-	if streamDebug || nodeDebug {
-		moss.DefaultCollectionOptions.Debug = 10
-		moss.DefaultCollectionOptions.Log = log.Printf
-	}
-
 	d.db, err = moss.NewCollection(moss.DefaultCollectionOptions)
-	d.db.Start()
-	return err
+	if err != nil {
+		return err
+	}
+	return d.db.Start()
 }
 
-// Remove closes the databasee and erases its contents
+// Remove closes the store and erases its contents
 func (d *DB) Remove() (err error) {
 	return d.Close()
 }

@@ -47,7 +47,7 @@ type DB struct {
 	path string
 }
 
-// Supplier for memory store
+// Supplier for leveldb store
 func Supplier() (store streams.Store) {
 	return &DB{}
 }
@@ -75,7 +75,7 @@ func (d *DB) Init(ctx streams.Context) (err error) {
 	return err
 }
 
-// Remove closes the databasee and erases its contents
+// Remove closes the store and erases its contents
 func (d *DB) Remove() (err error) {
 	if err = d.Close(); err != nil {
 		return nil
