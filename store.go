@@ -25,6 +25,13 @@ var (
 	ErrKeyNotFound = errors.New("key not found")
 )
 
+// Remover interface. Any Store that must clear its data
+// or state must implement this interface.
+// Remove must ensure releasing and closing of resources.
+type Remover interface {
+	Remove() (err error)
+}
+
 // StoreSupplier instantiates Stores used to create a Stream topology,
 // recreate them or clone a Stream.
 // If further configuration is needed, the store must implement the Initializer

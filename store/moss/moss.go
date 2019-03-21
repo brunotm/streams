@@ -34,6 +34,7 @@ var (
 // make sure we implement the needed interfaces
 var _ streams.Initializer = (*DB)(nil)
 var _ streams.Closer = (*DB)(nil)
+var _ streams.Remover = (*DB)(nil)
 var _ streams.Store = (*DB)(nil)
 var _ streams.StoreSupplier = Supplier
 
@@ -63,6 +64,11 @@ func (d *DB) Init(ctx streams.Context) (err error) {
 	d.db, err = moss.NewCollection(moss.DefaultCollectionOptions)
 	d.db.Start()
 	return err
+}
+
+// Remove closes the databasee and erases its contents
+func (d *DB) Remove() (err error) {
+	return d.Close()
 }
 
 // Close the store releasing its resources.
