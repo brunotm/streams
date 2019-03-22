@@ -29,17 +29,16 @@ type Record struct {
 	Key   Encoder      // Record Key
 	Value Encoder      // Record Value
 	Time  time.Time    // Record time
-	Ack   func() error // Ack Record source of its processing. Initially no-op.
+	ack   func() error // Ack Record source of its processing. Initially no-op.
 }
 
-// NewRecord creates a new record with the given paramenters and creates
-// a Record.ID if the record has nay content
+// NewRecord creates a new record. Key and ack are optional and can be set to nil.
 func NewRecord(topic string, key, value Encoder, ts time.Time, ack func() error) (record Record) {
 	record.Topic = topic
 	record.Key = key
 	record.Value = value
 	record.Time = ts
-	record.Ack = ack
+	record.ack = ack
 
 	switch {
 	case key != nil:
@@ -51,6 +50,14 @@ func NewRecord(topic string, key, value Encoder, ts time.Time, ack func() error)
 	}
 
 	return record
+}
+
+// Ack acknowledge the record source of its processing
+func (r Record) Ack() (err error) {
+	if r.ack != nil {
+		return r.ack()
+	}
+	return nil
 }
 
 // IsValid returns if this record contains any data
