@@ -75,21 +75,33 @@ func (d *DB) Name() (name string) {
 	return d.ctx.NodeName()
 }
 
-// Process store any forwarded record to the store
+// Process store or deletes any forwarded record to the store.
+// Records with empty values deletes the given key from the store.
 func (d *DB) Process(ctx streams.Context, record streams.Record) {
 
 	if !record.IsValid() || record.Key == nil {
 		ctx.Error(errors.New("invalid record to store"), record)
+		return
 	}
 
 	key, err := record.Key.Encode()
 	if err != nil {
 		ctx.Error(errors.New("error serializing record key"), record)
+		return
+	}
+
+	// Records with empty values deletes the given key from the store.
+	if record.Value == nil {
+		if err = d.Delete(key); err != nil {
+			ctx.Error(err, record)
+		}
+		return
 	}
 
 	value, err := record.Value.Encode()
 	if err != nil {
 		ctx.Error(errors.New("error serializing record value"), record)
+		return
 	}
 
 	if err = d.Set(key, value); err != nil {
