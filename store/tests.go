@@ -28,7 +28,7 @@ import (
 )
 
 // TestStore for streams.Store implementations
-func TestStore(t *testing.T, supplier streams.StoreSupplier, ctx streams.Context) {
+func TestStore(t *testing.T, supplier streams.StoreSupplier, pc streams.ProcessorContext) {
 	var err error
 	var store streams.Store
 
@@ -38,7 +38,7 @@ func TestStore(t *testing.T, supplier streams.StoreSupplier, ctx streams.Context
 	t.Run("initialize", func(t *testing.T) {
 		store = supplier()
 		if initializer, ok := store.(streams.Initializer); ok {
-			err = initializer.Init(ctx)
+			err = initializer.Init(pc)
 		}
 		assert.NoError(t, err)
 	})

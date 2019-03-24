@@ -19,7 +19,7 @@ package streams
 // Initializer interface. Any Processor or Store that must be initialized before
 // running tasks in the the stream must implement this interface.
 type Initializer interface {
-	Init(ctx Context) (err error)
+	Init(pc ProcessorContext) (err error)
 }
 
 // Closer interface. Any Processor or Store that must be closed on Stream
@@ -28,10 +28,10 @@ type Closer interface {
 	Close() (err error)
 }
 
-// Context is a execution context within a stream. Provides stream,
+// ProcessorContext is a execution context within a stream. Provides stream,
 // task and processor information, routing of records to children processors,
 // access to configured stores and contextual logging.
-type Context interface {
+type ProcessorContext interface {
 	// NodeName returns the current node name.
 	NodeName() (name string)
 	// StreamName returns the stream name.
@@ -54,13 +54,13 @@ type Context interface {
 // Processor of records in a Stream. Both processors and sinks must implement
 // this interface.
 type Processor interface {
-	Process(ctx Context, record Record)
+	Process(pc ProcessorContext, record Record)
 }
 
 // Source is a source of records in a Stream.
 type Source interface {
 	Processor
-	Consume(ctx Context)
+	Consume(pc ProcessorContext)
 }
 
 // ProcessorSupplier instantiates Processors used to create a Stream topology,
@@ -71,11 +71,11 @@ type Source interface {
 type ProcessorSupplier func() Processor
 
 // ProcessorFunc implements a Processor for a function type
-type ProcessorFunc func(ctx Context, record Record)
+type ProcessorFunc func(pc ProcessorContext, record Record)
 
 // Process the given record
-func (f ProcessorFunc) Process(ctx Context, record Record) {
-	f(ctx, record)
+func (f ProcessorFunc) Process(pc ProcessorContext, record Record) {
+	f(pc, record)
 }
 
 // SourceSupplier instantiates Sources used to create a Stream topology,

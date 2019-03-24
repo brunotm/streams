@@ -59,9 +59,9 @@ func (nt nodeTasks) forwardTo(to string, record Record) (err error) {
 	// TODO: need a map[node.name]node
 	for node := range nt {
 		if node.name == to {
-			node.context.activate()
-			node.processor.Process(node.context, record)
-			node.context.deactivate()
+			node.pc.activate()
+			node.processor.Process(node.pc, record)
+			node.pc.deactivate()
 			return nil
 		}
 	}

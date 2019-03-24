@@ -23,7 +23,7 @@ import (
 )
 
 // make sure we implement the Context interfaces
-var _ streams.Context = (*Context)(nil)
+var _ streams.ProcessorContext = (*Context)(nil)
 
 // ContextData for mocking
 type ContextData struct {

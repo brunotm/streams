@@ -54,8 +54,8 @@ func (s *Stream) Start() (err error) {
 	s.initTasks()
 
 	for _, node := range s.topology.stores {
-		ctx := newContext(s)
-		if err = node.init(ctx); err != nil {
+		pc := newContext(s)
+		if err = node.init(pc); err != nil {
 			return err
 		}
 	}
@@ -65,21 +65,21 @@ func (s *Stream) Start() (err error) {
 			continue
 		}
 
-		ctx := newContext(s)
-		if err = node.init(ctx); err != nil {
+		pc := newContext(s)
+		if err = node.init(pc); err != nil {
 			return err
 		}
 	}
 
 	for _, node := range s.topology.roots {
-		ctx := newContext(s)
-		if err = node.init(ctx); err != nil {
+		pc := newContext(s)
+		if err = node.init(pc); err != nil {
 			return err
 		}
 
 		// start streaming
-		node.context.activate()
-		go node.processor.(Source).Consume(ctx)
+		node.pc.activate()
+		go node.processor.(Source).Consume(pc)
 	}
 
 	return nil
@@ -110,7 +110,7 @@ func (s *Stream) Close() (err error) {
 
 		if closer, ok := node.processor.(Closer); ok {
 			for {
-				if node.context.IsActive() {
+				if node.pc.IsActive() {
 					runtime.Gosched()
 					continue
 				}
@@ -132,7 +132,7 @@ func (s *Stream) Close() (err error) {
 
 		if closer, ok := node.processor.(Closer); ok {
 			for {
-				if node.context.IsActive() {
+				if node.pc.IsActive() {
 					runtime.Gosched()
 					continue
 				}

@@ -42,7 +42,7 @@ var _ streams.StoreSupplier = Supplier
 
 // DB is a durable leveldb key value state store
 type DB struct {
-	ctx  streams.Context
+	pc   streams.ProcessorContext
 	db   *ldb.DB
 	path string
 }
@@ -53,8 +53,8 @@ func Supplier() (store streams.Store) {
 }
 
 // Init store
-func (d *DB) Init(ctx streams.Context) (err error) {
-	d.ctx = ctx
+func (d *DB) Init(pc streams.ProcessorContext) (err error) {
+	d.pc = pc
 
 	statePath, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
@@ -63,9 +63,9 @@ func (d *DB) Init(ctx streams.Context) (err error) {
 
 	statePath = statePath + "/state"
 
-	d.path = ctx.Config().
-		Get(ctx.StreamName(), "state", "path").
-		String(statePath) + "/" + ctx.NodeName()
+	d.path = pc.Config().
+		Get(pc.StreamName(), "state", "path").
+		String(statePath) + "/" + pc.NodeName()
 
 	d.db, err = ldb.OpenFile(d.path, dopt)
 	if err != nil {
@@ -92,40 +92,40 @@ func (d *DB) Close() (err error) {
 
 // Name returns this store name.
 func (d *DB) Name() (name string) {
-	return d.ctx.NodeName()
+	return d.pc.NodeName()
 }
 
 // Process store or deletes any forwarded record to the store.
 // Records with empty values deletes the given key from the store.
-func (d *DB) Process(ctx streams.Context, record streams.Record) {
+func (d *DB) Process(pc streams.ProcessorContext, record streams.Record) {
 
 	if !record.IsValid() || record.Key == nil {
-		ctx.Error(errors.New("invalid record to store"), record)
+		pc.Error(errors.New("invalid record to store"), record)
 		return
 	}
 
 	key, err := record.Key.Encode()
 	if err != nil {
-		ctx.Error(errors.New("error serializing record key"), record)
+		pc.Error(errors.New("error serializing record key"), record)
 		return
 	}
 
 	// Records with empty values deletes the given key from the store.
 	if record.Value == nil {
 		if err = d.Delete(key); err != nil {
-			ctx.Error(err, record)
+			pc.Error(err, record)
 		}
 		return
 	}
 
 	value, err := record.Value.Encode()
 	if err != nil {
-		ctx.Error(errors.New("error serializing record value"), record)
+		pc.Error(errors.New("error serializing record value"), record)
 		return
 	}
 
 	if err = d.Set(key, value); err != nil {
-		ctx.Error(err, record)
+		pc.Error(err, record)
 	}
 }
 

@@ -6,44 +6,44 @@ import (
 	"github.com/brunotm/streams/types"
 )
 
-// Context is a execution context within a stream. Provides stream,
+// ProcessorContext is a execution processorContext within a stream. Provides stream,
 // task and processor information, routing of records to children processors,
 // access to configured stores and contextual logging.
-type context struct {
+type processorContext struct {
 	active int32
 	stream *Stream
 	node   *Node
 }
 
-func newContext(s *Stream) (ctx *context) {
-	ctx = &context{}
-	ctx.stream = s
-	return ctx
+func newContext(s *Stream) (pc *processorContext) {
+	pc = &processorContext{}
+	pc.stream = s
+	return pc
 }
 
 // NodeName returns the current node name.
-func (c *context) NodeName() (name string) {
-	return c.node.name
+func (pc *processorContext) NodeName() (name string) {
+	return pc.node.name
 }
 
 // StreamName returns the stream name.
-func (c *context) StreamName() (name string) {
-	return c.stream.name
+func (pc *processorContext) StreamName() (name string) {
+	return pc.stream.name
 }
 
 // Config returns the stream app configuration.
-func (c *context) Config() (config Config) {
-	return c.stream.config
+func (pc *processorContext) Config() (config Config) {
+	return pc.stream.config
 }
 
 // IsActive returns if this context is active and can forward records to the stream.
-func (c *context) IsActive() (active bool) {
-	return atomic.LoadInt32(&c.active) > 0
+func (pc *processorContext) IsActive() (active bool) {
+	return atomic.LoadInt32(&pc.active) > 0
 }
 
 // Store returns the store for the given name
-func (c *context) Store(name string) (store Store, err error) {
-	node, exists := c.stream.topology.stores[name]
+func (pc *processorContext) Store(name string) (store Store, err error) {
+	node, exists := pc.stream.topology.stores[name]
 	if !exists {
 		return nil, ErrStoreNotFound
 	}
@@ -52,41 +52,41 @@ func (c *context) Store(name string) (store Store, err error) {
 }
 
 // Error emits a error event to be handled by the Stream.
-func (c *context) Error(err error, records ...Record) {
-	if c.stream.handler != nil {
-		c.stream.handler(Error{c.node, err, records})
+func (pc *processorContext) Error(err error, records ...Record) {
+	if pc.stream.handler != nil {
+		pc.stream.handler(Error{pc.node, err, records})
 	}
 }
 
 // Forward the record to the downstream processors. Can be called multiple times
 // within Processor.Process() in order to send correlated or windowed records.
-func (c *context) Forward(record Record) (err error) {
+func (pc *processorContext) Forward(record Record) (err error) {
 
-	if !c.IsActive() || (len(c.node.successors) == 0 || c.node.typ == types.Sink) {
+	if !pc.IsActive() || (len(pc.node.successors) == 0 || pc.node.typ == types.Sink) {
 		return ErrInvalidForward
 	}
 
-	c.stream.tasks.forwardFrom(c.node, record)
+	pc.stream.tasks.forwardFrom(pc.node, record)
 	return nil
 }
 
 // ForwardTo is like forward, but it forwards the record only to the given node
-func (c *context) ForwardTo(to string, record Record) (err error) {
+func (pc *processorContext) ForwardTo(to string, record Record) (err error) {
 
-	if !c.IsActive() || (len(c.node.successors) == 0 || c.node.typ == types.Sink) {
+	if !pc.IsActive() || (len(pc.node.successors) == 0 || pc.node.typ == types.Sink) {
 		return ErrInvalidForward
 	}
 
-	return c.stream.tasks.forwardTo(to, record)
+	return pc.stream.tasks.forwardTo(to, record)
 }
 
 // activate increments this context activation count
 // allowing the processor to forward records in the stream
-func (c *context) activate() {
-	atomic.AddInt32(&c.active, 1)
+func (pc *processorContext) activate() {
+	atomic.AddInt32(&pc.active, 1)
 }
 
 // deactivate decrements this context activation count
-func (c *context) deactivate() {
-	atomic.AddInt32(&c.active, -1)
+func (pc *processorContext) deactivate() {
+	atomic.AddInt32(&pc.active, -1)
 }

@@ -22,7 +22,7 @@ import "github.com/brunotm/streams/types"
 type Node struct {
 	name         string
 	typ          types.Type
-	context      *context
+	pc           *processorContext
 	processor    Processor
 	supplier     interface{}
 	successors   []*Node
@@ -56,27 +56,27 @@ func (n *Node) forward(record Record) {
 	// and process the current record decrementing its activation
 	// afterwards.
 	for i := 0; i < len(n.successors); i++ {
-		n.successors[i].context.activate()
-		n.successors[i].processor.Process(n.successors[i].context, record)
-		n.successors[i].context.deactivate()
+		n.successors[i].pc.activate()
+		n.successors[i].processor.Process(n.successors[i].pc, record)
+		n.successors[i].pc.deactivate()
 	}
 
-	// n.context.stream.topology.walk(
+	// n.pc.stream.topology.walk(
 	// 	n,
 	// 	false,
 	// 	func(sucessor *Node) (ok bool) {
-	// 		sucessor.context.activate()
-	// 		sucessor.processor.Process(sucessor.context, record)
-	// 		sucessor.context.deactivate()
+	// 		sucessor.pc.activate()
+	// 		sucessor.processor.Process(sucessor.pc, record)
+	// 		sucessor.pc.deactivate()
 	// 		return true
 	// 	})
 
 }
 
 // initialize the node and processor with the given context
-func (n *Node) init(ctx *context) (err error) {
-	n.context = ctx
-	n.context.node = n
+func (n *Node) init(pc *processorContext) (err error) {
+	n.pc = pc
+	n.pc.node = n
 
 	// Instatiate the node processor
 	switch n.typ {
@@ -95,7 +95,7 @@ func (n *Node) init(ctx *context) (err error) {
 
 	// Initialize the processor with the node context
 	if initializer, ok := n.processor.(Initializer); ok {
-		if err = initializer.Init(ctx); err != nil {
+		if err = initializer.Init(pc); err != nil {
 			return err
 		}
 	}
