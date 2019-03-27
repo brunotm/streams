@@ -39,7 +39,7 @@ type Stream struct {
 	name     string
 	config   Config
 	tasks    nodeTasks
-	topology topology
+	topology *topology
 	handler  func(Error)
 	donech   chan struct{}
 }
