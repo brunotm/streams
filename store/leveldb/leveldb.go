@@ -63,9 +63,9 @@ func (d *DB) Init(pc streams.ProcessorContext) (err error) {
 
 	statePath = statePath + "/state"
 
-	d.path = pc.Config().
-		Get(pc.StreamName(), "state", "path").
-		String(statePath) + "/" + pc.NodeName()
+	d.path = d.pc.Config().
+		Get(d.pc.StreamName(), "state", "path").
+		String(statePath) + "/" + d.pc.NodeName()
 
 	d.db, err = ldb.OpenFile(d.path, dopt)
 	if err != nil {
