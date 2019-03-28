@@ -99,7 +99,7 @@ func (s *Stream) Close() (err error) {
 		}
 
 		// close all source tasks
-		s.tasks.setScale(s.config, node, 0)
+		s.tasks.setScale(node, 0, 0)
 	}
 
 	// Close all processors
@@ -121,7 +121,7 @@ func (s *Stream) Close() (err error) {
 		}
 
 		// close all processor tasks
-		s.tasks.setScale(s.config, node, 0)
+		s.tasks.setScale(node, 0, 0)
 	}
 
 	// Close all sinks
@@ -176,7 +176,8 @@ func (s *Stream) initTasks() {
 		}
 		t := &tasks{}
 		s.tasks[node] = t
-		scale := s.config.Get(node.name, "tasks", "count").Int(0)
-		s.tasks.setScale(s.config, node, scale)
+		scale := s.config.Get(s.name, node.name, "tasks", "count").Int(0)
+		buffer := s.config.Get(s.name, node.name, "tasks", "buffer").Int(0)
+		s.tasks.setScale(node, scale, buffer)
 	}
 }

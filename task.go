@@ -70,7 +70,7 @@ func (nt nodeTasks) forwardTo(to string, record Record) (err error) {
 }
 
 // setScale scales the number of tasks to the given scale
-func (nt nodeTasks) setScale(config Config, node *Node, scale int) {
+func (nt nodeTasks) setScale(node *Node, scale, buffer int) {
 	st := nt[node]
 	st.Lock()
 	defer st.RUnlock()
@@ -80,10 +80,8 @@ func (nt nodeTasks) setScale(config Config, node *Node, scale int) {
 	// Increase the number of tasks for the given node.
 	// a scale of 1 only adds a buffer with no scale.
 	if scale > currScale {
-		bufferSize := config.Get(node.name, "tasks", "buffer_size").Int(0)
-
 		for ; scale > currScale; currScale++ {
-			task := make(chan Record, bufferSize)
+			task := make(chan Record, buffer)
 			st.buffers = append(st.buffers, task)
 			go func() {
 				for record := range task {
