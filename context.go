@@ -73,7 +73,7 @@ func (pc *processorContext) Forward(record Record) (err error) {
 // ForwardTo is like forward, but it forwards the record only to the given node
 func (pc *processorContext) ForwardTo(to string, record Record) (err error) {
 
-	if !pc.IsActive() || (len(pc.node.successors) == 0 || pc.node.typ == types.Sink) {
+	if !pc.IsActive() {
 		return ErrInvalidForward
 	}
 
