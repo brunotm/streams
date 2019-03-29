@@ -22,6 +22,7 @@ import (
 
 	"github.com/brunotm/streams"
 	"github.com/couchbase/moss"
+	"github.com/golang/snappy"
 )
 
 var (
@@ -39,8 +40,9 @@ var _ streams.StoreSupplier = Supplier
 
 // DB is a in-memory key value MOSS state store
 type DB struct {
-	pc streams.ProcessorContext
-	db moss.Collection
+	pc       streams.ProcessorContext
+	db       moss.Collection
+	compress bool
 }
 
 // Supplier for moss store
@@ -55,6 +57,11 @@ func (d *DB) Init(pc streams.ProcessorContext) (err error) {
 	if err != nil {
 		return err
 	}
+
+	d.compress = d.pc.Config().
+		Get(d.pc.StreamName(), d.pc.NodeName(), "compress").
+		Bool(true)
+
 	return d.db.Start()
 }
 
@@ -117,6 +124,10 @@ func (d *DB) Get(key []byte) (value []byte, err error) {
 		return nil, streams.ErrKeyNotFound
 	}
 
+	if d.compress {
+		value, err = snappy.Decode(nil, value)
+	}
+
 	return value, err
 }
 
@@ -128,6 +139,10 @@ func (d *DB) Set(key, value []byte) (err error) {
 		return err
 	}
 	defer batch.Close()
+
+	if d.compress {
+		value = snappy.Encode(nil, value)
+	}
 
 	err = batch.Set(key, value)
 	if err != nil {
@@ -173,7 +188,7 @@ func (d *DB) Range(from, to []byte, cb func(key, value []byte) error) (err error
 	defer iter.Close()
 
 	for {
-		key, val, err := iter.Current()
+		key, value, err := iter.Current()
 		if err != nil {
 			if err == moss.ErrIteratorDone {
 				return nil
@@ -181,7 +196,14 @@ func (d *DB) Range(from, to []byte, cb func(key, value []byte) error) (err error
 			return err
 		}
 
-		if err = cb(key, val); err != nil {
+		if d.compress {
+			value, err = snappy.Decode(nil, value)
+			if err != nil {
+				return err
+			}
+		}
+
+		if err = cb(key, value); err != nil {
 			return err
 		}
 
@@ -195,6 +217,14 @@ func (d *DB) Range(from, to []byte, cb func(key, value []byte) error) (err error
 func (d *DB) RangePrefix(prefix []byte, cb func(key, value []byte) error) (err error) {
 	err = d.Range(nil, nil, func(key, value []byte) error {
 		if bytes.HasPrefix(key, prefix) {
+
+			if d.compress {
+				value, err = snappy.Decode(nil, value)
+				if err != nil {
+					return err
+				}
+			}
+
 			return cb(key, value)
 		}
 		return nil
